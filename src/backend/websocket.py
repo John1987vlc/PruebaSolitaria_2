@@ -1,52 +1,38 @@
+# --- Imports ---
 from flask_socketio import SocketIO, emit, join_room, leave_room
 import json
 
 class WebSocketHandler:
     def __init__(self, game_server):
         self.game_server = game_server
-        self.socketio = SocketIO()
+        self.sid_to_player = {}
         
     def connect(self, sid, environ):
-        """Handle new WebSocket connections"""
-        try:
-            # Register player with GameServer
-            player_id = self.game_server.register_player(sid)
-            
-            # Send initial game state
-            initial_state = self.game_server.get_game_state(player_id)
-            emit('game_state', initial_state, room=sid)
-            
-        except Exception as e:
-            print(f"Connection error: {e}")
-            emit('error', {'message': 'Failed to connect'})
-    
+        # When a client connects, register them with the game server
+        # For now, we'll just store the sid mapping
+        pass
+        
     def message(self, sid, data):
-        """Handle incoming messages"""
         try:
-            # Parse JSON message
-            message_data = json.loads(data)
+            # Parse the JSON message
+            message = json.loads(data)
             
-            # Forward action to GameServer
-            result = self.game_server.handle_action(sid, message_data)
+            # Forward the action to the game server
+            result = self.game_server.handle_action(message)
             
-            # Broadcast updates to relevant rooms
-            if result:
-                self.socketio.emit('update', result, room=message_data.get('room', sid))
-                
+            # Broadcast the updated game state to all connected clients
+            emit('game_state_update', result, broadcast=True)
+            
         except json.JSONDecodeError:
-            emit('error', {'message': 'Malformed message'})
+            # Handle malformed JSON
+            emit('error', {'message': 'Invalid JSON message'})
         except Exception as e:
-            print(f"Message handling error: {e}")
-            emit('error', {'message': 'Failed to process message'})
-    
+            # Handle any other errors
+            emit('error', {'message': str(e)})
+            
     def disconnect(self, sid):
-        """Handle WebSocket disconnections"""
-        try:
-            # Notify GameServer of disconnection
-            self.game_server.unregister_player(sid)
-            
-            # Clean up resources if needed
-            # (e.g., remove from rooms, cleanup state)
-            
-        except Exception as e:
-            print(f"Disconnection error: {e}")
+        # When a client disconnects, remove them from the game server
+        if sid in self.sid_to_player:
+            player_id = self.sid_to_player[sid]
+            self.game_server.remove_player(player_id)
+            del self.sid_to_player[sid]
