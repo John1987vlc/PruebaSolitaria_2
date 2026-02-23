@@ -34,6 +34,10 @@ export class Player {
         this._life -= amount;
     }
 
+    adjustMana(amount) {
+        this._mana += amount;
+    }
+
     get name() {
         return this._name;
     }
@@ -48,10 +52,6 @@ export class Player {
 
     get hand() {
         return this._hand;
-    }
-
-    get deck() {
-        return this._deck;
     }
 
     get handSize() {
