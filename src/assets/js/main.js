@@ -22,110 +22,178 @@ function renderCard(card, container) {
             <span class="card-cost">${card.cost}</span>
         </div>
         <div class="card-type">${card.type}</div>
+        <div class="card-abilities">${card.abilities.join(', ')}</div>
         <div class="card-stats">
             <span class="card-attack">${card.attack}</span>
             <span class="card-defense">${card.defense}</span>
         </div>
-        <div class="card-abilities">
-            ${card.abilities.map(ability => `<span class="ability">${ability}</span>`).join('')}
-        </div>
     `;
-
-    // Add drag start event
-    cardElement.addEventListener('dragstart', (e) => {
-        e.dataTransfer.setData('text/plain', card.name);
-        e.dataTransfer.effectAllowed = 'move';
-    });
-
+    
     container.appendChild(cardElement);
 }
 
+function updateUI(gameState) {
+    // Update player info
+    const playerInfo = document.getElementById('player-info');
+    if (playerInfo && gameState.player) {
+        playerInfo.innerHTML = `
+            <h2>${gameState.player.name}</h2>
+            <p>Life: ${gameState.player.life}</p>
+            <p>Mana: ${gameState.player.mana}</p>
+        `;
+    }
+
+    // Update hand
+    const handContainer = document.getElementById('hand');
+    if (handContainer) {
+        handContainer.innerHTML = '';
+        if (gameState.player && gameState.player.hand) {
+            gameState.player.hand.forEach((card, index) => {
+                const cardElement = document.createElement('div');
+                cardElement.className = 'card';
+                cardElement.draggable = true;
+                cardElement.dataset.index = index;
+                
+                cardElement.innerHTML = `
+                    <div class="card-header">
+                        <h3 class="card-name">${card.name}</h3>
+                        <span class="card-cost">${card.cost}</span>
+                    </div>
+                    <div class="card-type">${card.type}</div>
+                    <div class="card-abilities">${card.abilities.join(', ')}</div>
+                    <div class="card-stats">
+                        <span class="card-attack">${card.attack}</span>
+                        <span class="card-defense">${card.defense}</span>
+                    </div>
+                `;
+                
+                handContainer.appendChild(cardElement);
+            });
+        }
+    }
+
+    // Update deck info
+    const deckInfo = document.getElementById('deck-info');
+    if (deckInfo && gameState.player) {
+        deckInfo.innerHTML = `
+            <p>Deck size: ${gameState.player.deck.size()}</p>
+            <p>Hand size: ${gameState.player.hand.length}</p>
+        `;
+    }
+}
+
 function initGame() {
-    // Get DOM elements
-    const deckContainer = document.getElementById('deck-container');
-    const cardPool = document.getElementById('card-pool');
-    
-    // Check if elements exist
-    if (!deckContainer || !cardPool) {
-        console.error('Required DOM elements not found');
+    // Initialize game UI elements
+    const gameContainer = document.getElementById('game-container');
+    if (!gameContainer) {
+        console.error('Game container not found');
         return;
     }
 
-    // Create a sample deck and player for testing
-    const player = new Player('Player 1');
-    const deck = new Deck();
-    
-    // Sample cards for the pool
-    const sampleCards = [
-        new Card({ name: 'Goblin', cost: 1, attack: 2, defense: 1, type: 'Creature', abilities: [] }),
-        new Card({ name: 'Knight', cost: 2, attack: 3, defense: 2, type: 'Creature', abilities: [] }),
-        new Card({ name: 'Spell', cost: 3, attack: 0, defense: 0, type: 'Spell', abilities: [] }),
-        new Card({ name: 'Dragon', cost: 4, attack: 5, defense: 4, type: 'Creature', abilities: [] })
-    ];
+    // Create basic UI structure if it doesn't exist
+    if (!document.getElementById('player-info')) {
+        const playerInfo = document.createElement('div');
+        playerInfo.id = 'player-info';
+        gameContainer.appendChild(playerInfo);
+    }
 
-    // Render cards in the pool
-    sampleCards.forEach(card => {
-        renderCard(card, cardPool);
-    });
+    if (!document.getElementById('hand')) {
+        const handContainer = document.createElement('div');
+        handContainer.id = 'hand';
+        handContainer.className = 'hand';
+        gameContainer.appendChild(handContainer);
+    }
 
-    // Set up drag and drop for deck container
-    deckContainer.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
-    });
+    if (!document.getElementById('deck-info')) {
+        const deckInfo = document.createElement('div');
+        deckInfo.id = 'deck-info';
+        gameContainer.appendChild(deckInfo);
+    }
 
-    deckContainer.addEventListener('drop', (e) => {
-        e.preventDefault();
-        
-        // Get the card name from drag data
-        const cardName = e.dataTransfer.getData('text/plain');
-        
-        // Check if we're under deck size limit (assuming 30 cards max)
-        if (deck.size() >= 30) {
-            alert('Deck is full! Maximum 30 cards allowed.');
-            return;
+    // Add event listeners for card actions
+    document.addEventListener('click', (event) => {
+        if (event.target.classList.contains('card')) {
+            const cardIndex = event.target.dataset.index;
+            if (cardIndex !== undefined) {
+                // Send play card action to backend
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({
+                        action: 'play_card',
+                        card_index: parseInt(cardIndex)
+                    }));
+                }
+            }
         }
-        
-        // Find the card in our sample cards
-        const card = sampleCards.find(c => c.name === cardName);
-        if (card) {
-            deck.addCard(card);
-            renderCard(card, deckContainer);
+    });
+
+    // Add drag and drop functionality
+    document.addEventListener('dragstart', (event) => {
+        if (event.target.classList.contains('card')) {
+            event.dataTransfer.setData('text/plain', event.target.dataset.index);
+        }
+    });
+
+    document.addEventListener('dragover', (event) => {
+        event.preventDefault();
+    });
+
+    document.addEventListener('drop', (event) => {
+        event.preventDefault();
+        const cardIndex = event.dataTransfer.getData('text/plain');
+        if (cardIndex !== '') {
+            // Send play card action to backend
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    action: 'play_card',
+                    card_index: parseInt(cardIndex)
+                }));
+            }
         }
     });
 }
 
+let ws;
+
 function connectWebSocket() {
-    // Establish WebSocket connection to backend
-    const ws = new WebSocket('ws://localhost:8080/ws');
+    // Create WebSocket connection to the backend
+    const socketUrl = `ws://${window.location.host}/ws`;
+    ws = new WebSocket(socketUrl);
     
     ws.onopen = function(event) {
         console.log('WebSocket connection established');
+        // Request initial game state
+        if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ action: 'get_state' }));
+        }
     };
-    
+
     ws.onmessage = function(event) {
-        // Handle incoming messages from the backend
-        const message = JSON.parse(event.data);
-        console.log('Received message:', message);
-        
-        // Forward user actions to backend
-        // This would typically involve sending game state updates
+        try {
+            const message = JSON.parse(event.data);
+            console.log('Received message:', message);
+            
+            if (message.type === 'game_state') {
+                updateUI(message.data);
+            } else if (message.type === 'error') {
+                console.error('Server error:', message.data);
+            } else if (message.type === 'action_response') {
+                console.log('Action response:', message.data);
+            }
+        } catch (error) {
+            console.error('Error parsing message:', error);
+        }
     };
-    
+
+    ws.onclose = function(event) {
+        console.log('WebSocket connection closed');
+        // Attempt to reconnect after a delay
+        setTimeout(connectWebSocket, 3000);
+    };
+
     ws.onerror = function(error) {
         console.error('WebSocket error:', error);
     };
-    
-    ws.onclose = function() {
-        console.log('WebSocket connection closed');
-    };
 }
-
-// Initialize the game when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    initGame();
-    connectWebSocket();
-});
 
 // Export functions for use by HTML entry point
 export { initGame, connectWebSocket };
