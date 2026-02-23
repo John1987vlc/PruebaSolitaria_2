@@ -42,4 +42,19 @@ export class Deck {
             abilities: [...card.abilities]
         }));
     }
+
+    addCard(card) {
+        this._cards.push(card);
+    }
+
+    removeCard(card) {
+        const index = this._cards.indexOf(card);
+        if (index > -1) {
+            this._cards.splice(index, 1);
+        }
+    }
+
+    getCards() {
+        return this._cards;
+    }
 }
