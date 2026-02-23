@@ -15,67 +15,56 @@ function initGame() {
     const deckArea = document.getElementById('deck-area');
     const manaArea = document.getElementById('mana-area');
     
-    // Initialize game state
-    game.initialize();
-    
-    // Attach event listeners for card actions
-    if (handArea) {
-        handArea.addEventListener('click', (event) => {
-            const cardElement = event.target.closest('.card');
-            if (cardElement) {
-                const cardIndex = Array.from(handArea.children).indexOf(cardElement);
-                if (cardIndex !== -1) {
+    // Set up event listeners for card clicks
+    handArea.addEventListener('click', (event) => {
+        const cardElement = event.target.closest('.card');
+        if (cardElement) {
+            const cardIndex = parseInt(cardElement.dataset.index);
+            if (!isNaN(cardIndex)) {
+                // Check if player can play this card (has enough mana)
+                const player = game.getCurrentPlayer();
+                const card = player.getHand()[cardIndex];
+                
+                if (player.getMana() >= card.cost) {
+                    // Play the card
                     game.playCard(cardIndex);
+                    // Update UI
+                    updateGameUI(game);
+                } else {
+                    // Not enough mana
+                    console.log('Not enough mana to play this card');
                 }
             }
-        });
-    }
-    
-    // Set up drag and drop for cards (if needed)
-    if (handArea) {
-        handArea.addEventListener('dragstart', (event) => {
-            if (event.target.classList.contains('card')) {
-                event.dataTransfer.setData('text/plain', event.target.dataset.cardIndex);
-            }
-        });
-    }
-    
-    // Render initial game state
-    renderGameState(game);
+        }
+    });
 }
 
-function renderGameState(game) {
-    const player = game.player;
-    const opponent = game.opponent;
-    const handArea = document.getElementById('hand-area');
+function updateGameUI(game) {
+    // This function would update the UI based on the game state
+    // Implementation would depend on the specific DOM structure
+    const player = game.getCurrentPlayer();
     const manaArea = document.getElementById('mana-area');
+    const handArea = document.getElementById('hand-area');
     
-    if (handArea && player && player.hand) {
-        handArea.innerHTML = '';
-        player.hand.forEach((card, index) => {
-            const cardElement = document.createElement('div');
-            cardElement.className = 'card';
-            cardElement.dataset.cardIndex = index;
-            cardElement.draggable = true;
-            
-            cardElement.innerHTML = `
-                <div class="card-header">
-                    <h3 class="card-name">${card.name}</h3>
-                    <span class="card-cost">${card.cost}</span>
-                </div>
-                <div class="card-body">
-                    <p class="card-type">${card.type}</p>
-                    <p class="card-attack">${card.attack}</p>
-                    <p class="card-defense">${card.defense}</p>
-                </div>
-            `;
-            
-            handArea.appendChild(cardElement);
-        });
+    if (manaArea) {
+        manaArea.textContent = `Mana: ${player.getMana()}`;
     }
     
-    if (manaArea && player) {
-        manaArea.innerHTML = `<span>Mana: ${player.mana}</span>`;
+    // Clear and re-render hand
+    if (handArea) {
+        handArea.innerHTML = '';
+        player.getHand().forEach((card, index) => {
+            const cardElement = document.createElement('div');
+            cardElement.className = 'card';
+            cardElement.dataset.index = index;
+            cardElement.innerHTML = `
+                <div class="card-name">${card.name}</div>
+                <div class="card-cost">Cost: ${card.cost}</div>
+                <div class="card-attack">Attack: ${card.attack}</div>
+                <div class="card-defense">Defense: ${card.defense}</div>
+            `;
+            handArea.appendChild(cardElement);
+        });
     }
 }
 
@@ -84,48 +73,28 @@ function connectWebSocket() {
     const ws = new WebSocket('ws://localhost:8000/ws');
     
     ws.onopen = function(event) {
-        console.log('WebSocket connection established');
-        // Send initial game state or authentication
+        console.log('Connected to WebSocket server');
     };
     
     ws.onmessage = function(event) {
+        // Handle incoming messages
         const message = JSON.parse(event.data);
         console.log('Received message:', message);
         
-        // Handle incoming messages (game state updates, actions, etc.)
-        switch (message.type) {
-            case 'game_state':
-                // Update local game state
-                break;
-            case 'player_action':
-                // Process player action
-                break;
-            default:
-                console.log('Unknown message type:', message.type);
-        }
+        // Forward user actions to backend
+        // This would depend on the specific message types expected
     };
     
     ws.onclose = function(event) {
-        console.log('WebSocket connection closed');
+        console.log('Disconnected from WebSocket server');
     };
     
     ws.onerror = function(error) {
         console.error('WebSocket error:', error);
     };
     
-    // Forward user actions to the backend
-    window.addEventListener('gameAction', function(event) {
-        if (ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify(event.detail));
-        }
-    });
+    return ws;
 }
 
 // Export functions for use by HTML entry point
 export { initGame, connectWebSocket };
-
-// Initialize the game when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    initGame();
-    connectWebSocket();
-});
