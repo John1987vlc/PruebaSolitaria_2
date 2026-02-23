@@ -30,9 +30,51 @@ Key benefits:
 
 ---
 
-## 3. Visual / Architecture Overview
+## 3. Installation
 
-```
+### Prerequisites
+- A modern web browser (Chrome, Firefox, Safari, Edge)
+- Python 3.12 or higher
+
+### Setup Instructions
+1. Clone the repository:
+      git clone https://github.com/your-username/Card-Game-JS.git
+   cd Card-Game-JS
+   
+2. Install Python dependencies:
+      pip install -r requirements.txt
+   
+3. Start the server:
+      python src/main.py
+   
+4. Open your browser and navigate to `http://localhost:8000`
+
+---
+
+## 4. Usage
+
+### Launching the Game
+1. Run the server using `python src/main.py`
+2. Open your browser and go to `http://localhost:8000`
+3. Create a new player account or log in
+
+### Game Interface
+- **Deck Builder**: Create and manage your card decks
+- **Game Board**: Play cards, manage mana, and engage in combat
+- **Player Stats**: View your current mana, life points, and hand
+- **Multiplayer**: Join or create matches with other players
+
+### Basic Gameplay
+1. Draw a card each turn
+2. Spend mana to play cards from your hand
+3. Attack opponents or block their attacks
+4. Manage your mana pool and life points
+5. Win by reducing your opponent's life points to zero
+
+---
+
+## 5. Architecture
+
 ┌───────────────────────┐
 │      Browser Client    │
 │  (index.html, style.css, game.js) │
@@ -49,92 +91,51 @@ Key benefits:
         │
         ▼
 ┌───────────────────────┐
-│      SQLite DB         │
-│  (decks, games, users) │
-└───────────────────────┘
-```
+│   SQLite Database      │
+│  (game_state.db)       │
+└──────────┬─────────────┘
 
-> *A diagram illustrating the client‑server interaction can be found in `docs/architecture.png`.*
+### Client-Side
+- `index.html`: Main game interface
+- `styles.css`: Game styling and responsive layout
+- `game.js`: Core game logic and state management
+- `deck.js`: Deck building and management
+- `player.js`: Player data and actions
+- `card.js`: Card definitions and behaviors
 
----
-
-## 4. Quick Start
-
-### Prerequisites
-
-- **Python 3.12** (recommended)
-- `pip` (Python package manager)
-
-> The front‑end requires no additional dependencies; all logic runs in the browser.
-
-### Installation
-
-```bash
-# 1. Clone the repository
-git clone https://github.com/your-username/card-game-js.git
-cd card-game-js
-
-# 2. (Optional) Create a virtual environment
-python -m venv venv
-source venv/bin/activate   # On Windows: venv\Scripts\activate
-
-# 3. Install server dependencies
-pip install -r requirements.txt
-```
-
-### Execution
-
-```bash
-# Start the development server
-python server.py
-```
-
-Open your browser and navigate to `http://localhost:8000`.  
-You should see the game lobby. Click **Play** to start a new game or **Load Deck** to import a deck JSON.
-
-> For a production build, run `python server.py --prod` and serve the static files via a reverse proxy (e.g., Nginx).
+### Server-Side
+- `server.py`: Main FastAPI server with WebSocket support
+- `websocket.py`: Real-time communication handlers
+- `database.py`: SQLite database operations for game state and player data
 
 ---
 
-## 5. Project Structure
+## 6. Contributing
 
-```
-card-game-js/
-├── docs/
-│   └── architecture.png          # Visual architecture diagram
-├── static/
-│   ├── css/
-│   │   └── style.css             # UI styling
-│   ├── js/
-│   │   ├── game.js               # Core game logic
-│   │   ├── ui.js                 # UI helpers
-│   │   └── websocket.js          # WebSocket communication
-│   └── index.html                # Entry point
-├── server/
-│   ├── __init__.py
-│   ├── routes.py                 # HTTP endpoints
-│   ├── websocket_handler.py      # WebSocket logic
-│   └── models.py                 # ORM models (SQLite)
-├── tests/
-│   ├── test_game_logic.py        # Unit tests for game engine
-│   └── test_server.py            # Integration tests
-├── requirements.txt              # Python dependencies
-├── server.py                     # Entry point for the Python server
-├── README.md
-└── LICENSE
-```
+We welcome contributions to improve Card-Game-JS! Here's how you can help:
 
-- **`static/`** – contains all front‑end assets.  
-- **`server/`** – Python modules handling HTTP routes, WebSocket connections, and database models.  
-- **`tests/`** – automated tests ensuring game logic correctness and server reliability.  
-- **`docs/`** – documentation assets, including the architecture diagram.  
+### Coding Standards
+- Follow JavaScript ES6+ conventions
+- Use consistent naming conventions
+- Write clear, descriptive comments
+- Maintain clean, readable code
 
-Feel free to extend the project by adding new card types, AI opponents, or a REST API for deck management. All changes should follow the existing modular pattern to keep the codebase maintainable.
+### Running Tests
+# Run unit tests
+python -m pytest tests/
+
+# Run linters
+flake8 src/
+
+### Pull Request Workflow
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/your-feature`)
+3. Commit your changes (`git commit -m 'Add your feature'`)
+4. Push to the branch (`git push origin feature/your-feature`)
+5. Open a pull request
 
 ---
 
-## License
+## 7. License
 
-MIT © 2026 Your Name
-
----
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
